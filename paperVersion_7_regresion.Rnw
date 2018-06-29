@@ -1,0 +1,89 @@
+\section{Modelos de Regresión}
+
+Finalmente, vemos los modelos propuestos. Primero sin la libertad mundial como independiente, y luego con está. Los resultados se muestran en la Tabla \ref{regresiones} de la página \pageref{regresiones}.
+
+<<getData, echo=FALSE>>=
+# carga de datos
+filename="indexes.csv"
+dataidx=read.csv(filename, stringsAsFactors = FALSE)
+
+# previsión:
+level5=c("muy malo","malo","medio","bueno","muy bueno")
+level4=c("muy malo","malo","bueno","muy bueno")
+level3=c("muy malo","medio","muy bueno")
+@
+
+<<regresiones, echo=FALSE>>=
+LinRegA = lm(Democracy ~ ., data = dataidx[,c(3:5)])
+LinRegB = lm(Democracy ~ ., data = dataidx[,c(2:5)])
+@
+
+
+<<regresionesPlot,results=tex, echo=false>>=
+library(stargazer)
+stargazer(LinRegA,LinRegB,
+          title = "Modelos de Regresión", 
+          label = "regresiones")
+@
+
+Como se vió en la Tabla \ref{regresiones}, cuando está presente el \emph{indice de libertad mundial}, el \emph{índice de libertad de prensa} pierde significancia.
+
+\clearpage
+
+\section{Exploración Espacial}
+
+Como acabamos de ver en la Tabla \ref{regresiones} en la página \pageref{regresiones}, si quisieras sintetizar la multidimensionalidad de nuestros indicadores, podríamos usar tres de las cuatro variables que tenemos (un par de las originales tiene demasiada correlación). 
+
+Así, propongo que calculemos conglomerados de países usando toda la información de tres de los indicadores. Como nuestras variables son ordinales utilizaremos un proceso de conglomeración donde las distancia serán calculadas usando la medida {\bf gower} propuestas en \cite{gower_general_1971}, y para los enlazamientos usaremos la técnica de {\bf medoides} según \cite{reynolds_clustering_2006}. Los tres conglomerados se muestran en la Figura \ref{clustmap}.
+
+<<getMap, echo=FALSE,results=hide>>=
+library(rgdal)
+folder='world_map'
+file='world_map.shp'
+mapaFile=file.path(folder,file)
+colRegs <- rgdal::readOGR(mapaFile,stringsAsFactors=F) 
+colRegsIdx=merge(colRegs,dataidx, by.x='NAME', by.y='Country',all.x=F)
+@
+
+
+<<echo=FALSE>>=
+dimensions=c("NAME","EconomicFreedom","PressFreedom","Democracy")
+library(cluster)
+dataCluster=colRegsIdx@data[,c(dimensions)]
+dataCluster[,-1]=lapply(dataCluster[,-1],as.ordered)
+row.names(dataCluster)=dataCluster$NAME
+dist=daisy(dataCluster[,-1],metric = "gower")
+pam_fit <- pam(dist, diss = TRUE, k = 3)
+clusters=as.data.frame(pam_fit$clustering)
+clusters$NAME=row.names(clusters)
+names(clusters)=c('cluster','NAME')
+colRegsIdx=merge(colRegsIdx,clusters, by='NAME',all.x=F)
+@
+
+
+
+\begin{figure}[h]
+\centering
+\begin{adjustbox}{width=11cm,height=8cm,clip,trim=1cm 2.5cm 0cm 2.5cm}
+<<plotMap1, echo=FALSE, fig=TRUE>>=
+library(RColorBrewer)
+library(classInt)
+varToPLot=colRegsIdx$cluster
+numberOfClasses = length(unique(varToPLot)) 
+colorForScale='Set2'
+paleta = brewer.pal(numberOfClasses, colorForScale)
+plot(colRegs,col='grey',border=0)
+plot(colRegsIdx, col = paleta[varToPLot],border=F,add=T)
+legend('left', legend = c("MEDIUM","LOW","UP"), # third change
+       fill = paleta, # fourth change
+       cex = 0.6, 
+       bty = "n",
+       title="conglomerado")
+@
+\end{adjustbox}
+\caption{Paises conglomerados segun sus indicadores sociopolíticos}\label{clustmap}
+\end{figure}
+
+
+
+\endinput

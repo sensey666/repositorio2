@@ -1,0 +1,57 @@
+\section{Exploración Bivariada}\label{bivariada}
+
+En este trabajo estamos interesados en el impacto de los otros indices en el nivel de Democracia. Veamos las relaciones bivariadas que tiene esta variable con todas las demás:
+
+<<getData, echo=FALSE>>=
+# carga de datos
+filename="indexes.csv"
+dataidx=read.csv(filename, stringsAsFactors = FALSE)
+
+# previsión:
+level5=c("muy malo","malo","medio","bueno","muy bueno")
+level4=c("muy malo","malo","bueno","muy bueno")
+level3=c("muy malo","medio","muy bueno")
+
+@
+
+<<corrDem, results=tex, echo=FALSE>>=
+library(stargazer)
+explanans=names(dataidx)[c(2:4)]
+corrDem=cor(dataidx[,5],dataidx[,explanans],
+            use = "na.or.complete")
+stargazer(corrDem, title="Correlación de Democracia con las demás variables",label = "corrDem")
+@
+
+
+Veamos la correlación entre las variables independientes:
+
+
+<<corrTableX, results=tex, echo=FALSE>>=
+corrTableX=round(cor(dataidx[explanans],
+               use = "na.or.complete"),2)
+corrTableX_copy=corrTableX
+# Hide upper triangle
+
+corrTableX[upper.tri(corrTableX)]<-""
+
+stargazer(corrTableX, title="Correlación entre variables independientes",label = 'corrTableX')
+@
+
+Lo visto en la Tabla \ref{corrTableX} se refuerza claramente en la Figura \ref{corrPlotX}.
+
+\begin{figure}[h]
+\centering
+\begin{adjustbox}{width=7cm,height=7cm,clip,trim=1.5cm 0.5cm 0cm 1.5cm}
+<<corrPlotX, echo=FALSE,fig=TRUE>>=
+library(corrplot)
+corrplot(corrTableX_copy, type = "lower", diag = F,
+         addCoef.col = "black")
+@
+\end{adjustbox}
+\caption{correlación entre predictores}
+\label{corrPlotX}
+\end{figure}
+
+
+
+\endinput
